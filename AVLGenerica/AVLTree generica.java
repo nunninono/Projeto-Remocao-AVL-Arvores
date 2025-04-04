@@ -298,88 +298,131 @@ class AVLTreeGenerica <T extends Comparable<T>> {
 
     // Função recursiva para remoção de um nó
     private AVLNode<T> removeNode(AVLNode<T> node, T value) {
+        // Condição de parada caso nao encontre o nó
         if (node == null) {
             return node; // Se o nó for nulo, apenas retorna
         }
 
         // Desce na árvore até encontrar o nó a ser removido
+        // Se valor for menor que o nó perguntado, desde pra esquerda
         if (value.compareTo(node.getInfo()) < 0) {
             node.setLeft(removeNode(node.getLeft(), value)); // Vai para a subárvore esquerda
         } 
+
+        // Se valor for maior que o nó perguntado, desde pra direita
         else if (value.compareTo(node.getInfo()) > 0) {
             node.setRight(removeNode(node.getRight(), value)); // Vai para a subárvore direita
         } 
-        else {
-            // Encontrou o nó a ser removido
-            // Caso 1: Nó com um único filho ou nenhum
+
+        // Encontrou o nó a ser removido
+        else if (value.compareTo(node.getInfo()) == 0) {    
+            // Nó com um único filho ou nenhum
+            // Se não tem filho à esquerda, retorna o filho à direita
             if (node.getLeft() == null) {
-                return node.getRight(); // Se não tem filho à esquerda, retorna o filho à direita
+                return node.getRight(); 
             } 
+            // Se não tem filho à direita, retorna o filho à esquerda
             else if (node.getRight() == null) {
-                return node.getLeft(); // Se não tem filho à direita, retorna o filho à esquerda
+                return node.getLeft(); 
             }
 
-            // Caso 2: Nó com dois filhos
-            node.setInfo(getMaxValue(node.getLeft())); // Substitui pelo maior valor da subárvore à esquerda
-            node.setLeft(removeNode(node.getLeft(), node.getInfo())); // Remove o nó que foi movido para a raiz
+            // Nó com dois filhos
+            // Encontrar o maior valor na subárvore esquerda
+            AVLNode<T> maiorLeft = node.getLeft(); // Novo nó aponta para esquerda de node
+            // Uma vez na subArvore da esquerda, basta ir buscar o maior nó indo so na direita
+            while (maiorLeft.getRight() != null) {
+                maiorLeft = maiorLeft.getRight();
+            }
+            // Substitui node pelo maiorLeft (maiorLeft passa a ser a raiz)
+            node.setInfo(maiorLeft.getInfo()); 
+            // Remove o maiorLeft original
+            node.setLeft(removeNode(node.getLeft(), maiorLeft.getInfo())); 
         }
 
-        // Após a remoção, reequilibrar a árvore se necessário
-        return balanceAfterRemoval(node);
+        // balancear a árvore se necessário após a remoção
+        return balancear(node);
     }
 
-    // Função para encontrar o maior valor da subárvore à esquerda
-    private T getMaxValue(AVLNode<T> node) {
-        while (node.getRight() != null) {
-            node = node.getRight(); // Desce para a direita até encontrar o maior valor
-        }
-        return node.getInfo();
-    }
+    // Função para balancear a arvore após a remoção
+    private AVLNode<T> balancear(AVLNode<T> node) {
+        // Obtem o fatBal do node passado por parametro
+        int balanceFactor = obterFatBal(node);
 
-    // Função para balancear a árvore após a remoção
-    private AVLNode<T> balanceAfterRemoval(AVLNode<T> node) {
-        // Atualiza o fator de balanceamento do nó
-        int balanceFactor = getBalanceFactor(node);
-
-        // Caso 1: Rotação simples à direita
-        if (balanceFactor > 1 && getBalanceFactor(node.getLeft()) >= 0) {
+        // Verifica qual situação o nó se encontra
+        // 1. Rotação simples à direita
+        // fatBal do nó = +2 e do filho a esquerda tambem pendendo pra esquerda
+        if (balanceFactor > 1 && obterFatBal(node.getLeft()) >= 0) {
             return rotateRight(node);
         }
 
-        // Caso 2: Rotação simples à esquerda
-        if (balanceFactor < -1 && getBalanceFactor(node.getRight()) <= 0) {
+        // 2. Rotação simples à esquerda
+        // fatBal do nó = -2 e do filho a direita tambem pendendo pra direita
+        if (balanceFactor < -1 && obterFatBal(node.getRight()) <= 0) {
             return rotateLeft(node);
         }
 
-        // Caso 3: Rotação dupla à direita (esquerda do nó à esquerda)
-        if (balanceFactor > 1 && getBalanceFactor(node.getLeft()) < 0) {
+        // 3. Rotação dupla à direita (B pra esquerda e C pra direita)
+        // fatBal do nó = +2 e do filho a esquerda pendendo pra esquerda
+        if (balanceFactor > 1 && obterFatBal(node.getLeft()) < 0) {
             node.setLeft(rotateLeft(node.getLeft())); // Primeira rotação à esquerda
             return rotateRight(node); // Segunda rotação à direita
         }
 
-        // Caso 4: Rotação dupla à esquerda (direita do nó à direita)
-        if (balanceFactor < -1 && getBalanceFactor(node.getRight()) > 0) {
+        // 4. Rotação dupla à esquerda (B pra direita e C pra esquerda)
+        // fatBal do nó = -2 e do filho a direita pendendo pra esquerda
+        if (balanceFactor < -1 && obterFatBal(node.getRight()) > 0) {
             node.setRight(rotateRight(node.getRight())); // Primeira rotação à direita
             return rotateLeft(node); // Segunda rotação à esquerda
         }
 
-        return node; // Retorna o nó após o balanceamento (ou não for necessário)
+        // Retorna o nó após o balancear ou se ele ja estiver balandeado
+        return node; 
     }
 
     // Função para obter o fator de balanceamento de um nó
-    private int getBalanceFactor(AVLNode<T> node) {
+    private int obterFatBal(AVLNode<T> node) {
+        // Se node == null, retorna pois nao tem o que balancear
         if (node == null) {
             return 0;
         }
-        return getHeight(node.getLeft()) - getHeight(node.getRight());
+    
+        // Obtém altura da subárvore esquerda
+        int alturaEsquerda = -1;  // -1 pois nó nulo tem altura -1
+        // Se houver filho na esquerda, chama altura()
+        if (node.getLeft() != null) {
+            alturaEsquerda = altura(node.getLeft());
+        }
+    
+        // Obtém altura da subárvore direita
+        int alturaDireita = -1;  // -1 pois nó nulo tem altura -1
+        // Se houver filho na direita, chama altura()
+        if (node.getRight() != null) {
+            alturaDireita = altura(node.getRight());
+        }
+        
+        // Retorna o fatBal (diferença das alturas)
+        return alturaEsquerda - alturaDireita;
     }
 
     // Função para calcular a altura de um nó
-    private int getHeight(AVLNode<T> node) {
+    private int altura(AVLNode<T> node) {
+        // nó nulo tem altura -1
         if (node == null) {
-            return 0;
+            return -1;
         }
-        return Math.max(getHeight(node.getLeft()), getHeight(node.getRight())) + 1;
+        
+        // Calcula ambas as alturas de forma recursiva
+        int alturaLeft = altura(node.getLeft());
+        int alturaRight = altura(node.getRight());
+        
+        // Calcula a altura real do nó pedido
+        // Calculo da altura ltura é 1 + altura da maior subArvore
+        if (alturaLeft > alturaRight) {
+            return alturaLeft + 1;
+        } 
+        else {
+            return alturaRight + 1;
+        }
     }
 
 }
