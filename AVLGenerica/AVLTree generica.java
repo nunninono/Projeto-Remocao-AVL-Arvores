@@ -224,7 +224,7 @@ class AVLTreeGenerica <T extends Comparable<T>> {
             // Chama ela mesma até chegar no menor nó da arvore
             // O processo é como uma pilha
             percorrerEmOrdem(node.getLeft());
-            System.out.print(node.getInfo() + " "); // imprime valor
+            System.out.print(node.getInfo() + "(ftb: " + node.getFatBal() + ") "); // imprime valor
             percorrerEmOrdem(node.getRight());
         }
     }
@@ -247,7 +247,8 @@ class AVLTreeGenerica <T extends Comparable<T>> {
 
                 // Entra no IF caso o aux possua valores (nao seja null)
                 if (aux != null) {
-                    System.out.print(aux.getInfo() + " "); // Exibe a info presente no nó aux
+                    // Exibe a info presente no nó aux
+                    System.out.print(aux.getInfo() + "(ftb: " + aux.getFatBal() + ") "); 
                     numNosRestantes--;
 
                     // Caso aux possua um filho a esquerda, adiciona o mesmo na fila
